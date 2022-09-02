@@ -39,6 +39,18 @@ func AddUser() func(c *gin.Context) {
 		} else {
 			if stdout == "Done\n" {
 				ok = true
+				// 查询其Hash
+				var tUser model.TrojanSingleUser
+				getTrojanUser(user.TargetPassword, &tUser)
+				if tUser.Success {
+					var us UserStore
+					hash := tUser.Status.User.Hash
+					us.OldTrafficDown = 0
+					us.OldTrafficUp = 0
+					us.Id = user.Id
+					Users[hash] = us
+					IdHash[user.Id] = hash
+				}
 			} else {
 				msg = stdout
 			}

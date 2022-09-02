@@ -1,9 +1,8 @@
 package action
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
+	"strconv"
 	"trojan-api/model"
 	"trojan-api/utils"
 )
@@ -11,44 +10,92 @@ import (
 func DelUser() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var (
-			msg  string
-			ok   bool
-			stat int
+			msg         string
+			ok          bool
+			err         error
+			errMsg      string
+			hash        string
+			upTraffic   int
+			downTraffic int
 		)
 
+		var tUser model.TrojanSingleUser
+
 		pass := c.PostForm("pass")
+		id := c.PostForm("id")
+		var iId = 0
 
-		// get last traffic info before delete
-		err, stdout, stderr := utils.RunTrojanCLI("get -target-password " + pass)
+		if pass == "" && id == "" {
+			utils.RespondWithError(500, "Please provide password or id", c)
+			return
+		}
 
-		if err == nil {
-			var user model.TrojanUserDetail
-			if err = json.Unmarshal([]byte(stdout), &user); err != nil {
-				fmt.Println("parse json error: ", err.Error())
+		if pass == "" {
+			iId, err = strconv.Atoi(id)
+			if err != nil {
+				utils.RespondWithError(500, err.Error(), c)
 				return
 			}
-
-			stat = user.Status.TrafficTotal.DownloadTraffic + user.Status.TrafficTotal.UploadTraffic
-
-			err, stdout, stderr = utils.RunTrojanCLI("set -delete-profile -target-password " + pass)
-
-			if err != nil {
-				msg = err.Error() + "\n" + stderr
+			if hash, ok = IdHash[iId]; ok {
+				ok, errMsg = getTrojanUserByHash(hash, &tUser)
 			} else {
-				if stdout == "Done\n" {
-					ok = true
-				} else {
-					msg = stdout
-				}
+				c.JSON(200, gin.H{
+					"success": false,
+					"msg":     "id not exist",
+				})
+				return
 			}
 		} else {
+			ok, errMsg = getTrojanUser(pass, &tUser)
+		}
+
+		if !ok {
+			utils.RespondWithError(500, errMsg, c)
+			return
+		}
+
+		if tUser.Status == nil {
+			c.JSON(200, gin.H{
+				"success": tUser.Success,
+				"msg":     tUser.Info,
+			})
+			return
+		}
+
+		upTraffic = tUser.Status.TrafficTotal.UploadTraffic
+		downTraffic = tUser.Status.TrafficTotal.DownloadTraffic
+
+		hash = tUser.Status.User.Hash
+		if us, ok := Users[hash]; ok {
+			if upTraffic >= us.OldTrafficUp {
+				upTraffic = upTraffic - us.OldTrafficUp
+			}
+			if downTraffic >= us.OldTrafficDown {
+				downTraffic = downTraffic - us.OldTrafficUp
+			}
+		}
+
+		err, stdout, stderr := utils.RunTrojanCLI("set -delete-profile -target-hash " + hash)
+
+		if err != nil {
 			msg = err.Error() + "\n" + stderr
+		} else {
+			if stdout == "Done\n" {
+				ok = true
+				delete(Users, hash)
+				delete(IdHash, iId)
+			} else {
+				msg = stdout
+			}
 		}
 
 		c.JSON(200, gin.H{
-			"success":  ok,
-			"msg":      msg,
-			"transfer": stat,
+			"success": ok,
+			"msg":     msg,
+			"transfer": gin.H{
+				"upload":   upTraffic,
+				"download": downTraffic,
+			},
 		})
 	}
 }
