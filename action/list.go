@@ -39,7 +39,7 @@ func List() func(c *gin.Context) {
 		}
 
 		// trojan-go提供的信息不能直接拿来用，而是需要我们进行转换
-		var users []model.UserDetail
+		var users = make([]model.UserDetail, 0)
 		for _, tUser := range tUsers {
 			var user model.UserDetail
 			transformTrojanUserToApiUser(&tUser.Status, &user)
