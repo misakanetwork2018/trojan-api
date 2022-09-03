@@ -75,11 +75,9 @@ func main() {
 	r := gin.Default()
 
 	var fsDir = conf.Web.FSDir
-	if fsDir == "" {
-		fsDir = "/tmp/trojan-api/.well-known"
+	if fsDir != "" {
+		r.StaticFS("/.well-known", http.Dir(fsDir))
 	}
-
-	r.StaticFS("/.well-known", http.Dir(fsDir))
 
 	r.Use(webMiddleware)
 
