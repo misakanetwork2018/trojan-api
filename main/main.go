@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"trojan-api/action"
 	"trojan-api/utils"
@@ -24,6 +25,7 @@ type WebApiConfig struct {
 	AccessKey string `yaml:"access-key"`
 	Address   string `yaml:"address"`
 	Port      string `yaml:"port"`
+	FSDir     string `yaml:"fs-dir"`
 }
 
 func main() {
@@ -71,6 +73,14 @@ func main() {
 	accessKey = conf.Web.AccessKey
 
 	r := gin.Default()
+
+	var fsDir = conf.Web.FSDir
+	if fsDir == "" {
+		fsDir = "/tmp/trojan-api/.well-known"
+	}
+
+	r.StaticFS("/.well-known", http.Dir(fsDir))
+
 	r.Use(webMiddleware)
 
 	r.POST("/add", action.AddUser())
@@ -84,6 +94,12 @@ func main() {
 }
 
 func webMiddleware(c *gin.Context) {
+	//var url = c.Request.URL.String()
+	//if strings.HasPrefix(url, "/.well-known/acme-challenge/") { // 用于acme的路由不走验证
+	//	c.Next()
+	//	return
+	//}
+
 	token := c.GetHeader("X-Auth-Token")
 	if token == "" {
 		utils.RespondWithError(401, "API token required", c)
