@@ -15,6 +15,11 @@ func ModifyUser() func(c *gin.Context) {
 			return
 		}
 
+		if user.TargetPassword == "" && user.Id == 0 {
+			utils.RespondWithError(500, "Please provide password or id", c)
+			return
+		}
+
 		command := "set -modify-profile -target-password " + user.TargetPassword
 
 		if user.IpLimit == nil && user.DownloadSpeedLimit == nil && user.UploadSpeedLimit == nil {

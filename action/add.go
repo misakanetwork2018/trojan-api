@@ -15,6 +15,14 @@ func AddUser() func(c *gin.Context) {
 			return
 		}
 
+		if user.TargetPassword == "" {
+			c.JSON(200, gin.H{
+				"success": false,
+				"msg":     "Your should provide password",
+			})
+			return
+		}
+
 		command := "set -add-profile -target-password " + user.TargetPassword
 
 		if user.IpLimit != nil {

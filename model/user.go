@@ -2,7 +2,7 @@ package model
 
 type User struct {
 	Id                 int    `form:"id"`
-	TargetPassword     string `form:"pass" binding:"required"`
+	TargetPassword     string `form:"pass"`
 	IpLimit            *int   `form:"ip_limit" binding:"required"`
 	UploadSpeedLimit   *int   `form:"upload_speed_limit" binding:"required"`
 	DownloadSpeedLimit *int   `form:"download_speed_limit" binding:"required"`
