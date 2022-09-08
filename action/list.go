@@ -147,22 +147,22 @@ func getTrojanUserByHash(hash string, user *model.TrojanSingleUser) (bool, strin
 
 func transformTrojanUserToApiUser(status *model.TrojanStatus, user *model.UserDetail) {
 	hash := (*status).User.Hash
+	var us = Users[hash]
 	(*user).Id = Users[hash].Id
 	(*user).TargetHash = hash
 	(*user).DownloadTraffic = (*status).TrafficTotal.DownloadTraffic
 	(*user).UploadTraffic = (*status).TrafficTotal.UploadTraffic
-	if (*user).UploadTraffic > Users[hash].OldTrafficUp {
-		(*user).UploadTraffic -= Users[hash].OldTrafficUp
+	if (*user).UploadTraffic >= us.OldTrafficUp {
+		(*user).UploadTraffic -= us.OldTrafficUp
 	}
-	if (*user).DownloadTraffic > Users[hash].OldTrafficDown {
-		(*user).DownloadTraffic -= Users[hash].OldTrafficDown
+	if (*user).DownloadTraffic >= us.OldTrafficDown {
+		(*user).DownloadTraffic -= us.OldTrafficDown
 	}
 	(*user).DownloadSpeed = (*status).SpeedCurrent.DownloadSpeed
 	(*user).UploadSpeed = (*status).SpeedCurrent.UploadSpeed
 	(*user).DownloadSpeedLimit = (*status).SpeedLimit.DownloadSpeed
 	(*user).UploadSpeedLimit = (*status).SpeedLimit.UploadSpeed
 	(*user).IPLimit = (*status).IPLimit
-	var us = Users[hash]
 	us.OldTrafficUp = (*status).TrafficTotal.UploadTraffic
 	us.OldTrafficDown = (*status).TrafficTotal.DownloadTraffic
 	Users[hash] = us
